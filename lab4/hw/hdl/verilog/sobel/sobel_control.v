@@ -172,7 +172,7 @@ for (i = 0; i < `NUM_SOBEL_ACCELERATORS; i = i + 1) begin: sobel_write_en
 // *** Write enable ***
 // If pixel_write_en[i] is set to 1, this tells the memory system that the current pixel at index i from the Sobel accelerator contains valid data to be written.
 // Make sure to only set it to 1 when the Sobel accelerator is producing valid data at that pixel position.
-assign      pixel_write_en[i]                   = 'h0;
+assign      pixel_write_en[i]                   = buf_write_en;
 
 end
 endgenerate
@@ -217,7 +217,7 @@ always @ (*) begin
             if (go) begin
                 // *** Row 3 loading state ***
                 // Insert your state transition code here.
-                state_next                      = STATE_PROCESSING_CALC;
+                state_next                      = (row_counter_next == control_n_rows - 2) ? STATE_PROCESSING_CALC_LAST : STATE_PROCESSING_CALC;
             end
         end
         
@@ -225,7 +225,7 @@ always @ (*) begin
             if (go) begin
                 // *** Calculation state ***
                 // Insert your state transition code here.
-                state_next                      = (row_counter_next == control_n_rows - 2) ? STATE_PROCESSING_LOADSS_LAST :  STATE_PROCESSING_LOADSS;
+                state_next                      = STATE_PROCESSING_LOADSS;
             end
         end
         
@@ -234,7 +234,7 @@ always @ (*) begin
                 // *** Next row loading state ***
                 // Insert your state transition code here.
         
-                state_next                      = STATE_PROCESSING_CALC_LAST;
+                state_next                      = STATE_LOADING_1;
             end
         end
         
@@ -242,7 +242,7 @@ always @ (*) begin
             if (go) begin
                 // *** Last-row-in-column-strip calculation state ***
                 // Insert your state transition code here.
-                state_next                      = (next_col_strip == max_col_strip) ? STATE_PROCESSING_DONE :  STATE_LOADING_1;
+                state_next = STATE_PROCESSING_LOADSS_LAST;
             end
         end
         
@@ -250,7 +250,8 @@ always @ (*) begin
             if (go) begin
                 // *** Last-row-in-column loading state ***
                 // Insert your state transition code here.
-                state_next                      = STATE_PROCESSING_CALC_LAST;
+                state_next                      = (next_col_strip == max_col_strip) ? STATE_PROCESSING_DONE :  STATE_LOADING_1;
+ 
             end
         end
         
@@ -377,7 +378,7 @@ always @ (*) begin
         
         STATE_LOADING_3: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_counter_next                    = row_counter - 1;
+            row_counter_next                    = row_counter - 2;
         end
         
         STATE_PROCESSING_CALC: begin
@@ -387,7 +388,7 @@ always @ (*) begin
         
         STATE_PROCESSING_LOADSS: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_counter_next                    = row_counter;
+            row_counter_next                    = row_counter + 1;
         end
         
         STATE_PROCESSING_CALC_LAST: begin
@@ -501,7 +502,7 @@ always @ (*) begin
             if (go) begin
                 // Once the control signal is asserted, does something need to happen?
                 // Think about what the next state is going to be and what data the accelerator expects to get.
-                buf_read_offset_next            = control_n_cols;
+                buf_read_offset_next            = row_counter_next * control_n_cols + col_strip;
             end else begin
                 // If there is no control signal, just read from the beginning of the image.
                 // This part is provided for you.
@@ -511,37 +512,37 @@ always @ (*) begin
         
         STATE_LOADING_1: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = row_counter_next * control_n_cols + col_strip;
         end
         
         STATE_LOADING_2: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = row_counter_next * control_n_cols + col_strip;
         end
         
         STATE_LOADING_3: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = buf_read_offset;
         end
         
         STATE_PROCESSING_CALC: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = buf_read_offset;
         end
         
         STATE_PROCESSING_LOADSS: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = row_counter_next * control_n_cols + col_strip;
         end
         
         STATE_PROCESSING_CALC_LAST: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = buf_read_offset;
         end
         
         STATE_PROCESSING_LOADSS_LAST: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_read_offset_next                = row_counter * control_n_cols + col_strip;
+            buf_read_offset_next                = row_counter_next * control_n_cols + col_strip_next;
         end
         
         STATE_PROCESSING_DONE: begin
@@ -585,12 +586,12 @@ always @ (*) begin
         
         STATE_LOADING_2: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_write_offset_next               = row_counter * control_n_cols + col_strip;
+            buf_write_offset_next               = buf_write_offset;
         end
         
         STATE_LOADING_3: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            buf_write_offset_next               = buf_write_offset;
+            buf_write_offset_next               = row_counter_next * control_n_cols + col_strip;
         end
         
         STATE_PROCESSING_CALC: begin

@@ -46,7 +46,11 @@ assign      sacc2swt_write_data                 = sobel_out;
 // If you need any extra signals to help with the convolution, declare them here. Otherwise, you may remove these comments.
 // Note that you will need to use "reg" (not "wire") for any signals written to inside the "always" block.
 
-
+reg signed [11:0] x_sum_signed[`NUM_SOBEL_ACCELERATORS-1:0];
+reg signed [11:0] y_sum_signed[`NUM_SOBEL_ACCELERATORS-1:0];
+reg [11:0] x_abs[`NUM_SOBEL_ACCELERATORS-1:0];
+reg [11:0] y_abs[`NUM_SOBEL_ACCELERATORS-1:0];
+reg [11:0] sum_pre[`NUM_SOBEL_ACCELERATORS-1:0];
 
 // *** Sobel convolution implementation ***
 // The provided implementation is incomplete. You will need to finish it.
@@ -75,7 +79,10 @@ generate
             
             // Combine the values above in a way that faithfully implements Sobel.
             // You may declare more signals as needed.
-            convx[c]   = 'h0; 
+            x_sum_signed[c] = convx11[c] + convx12[c] + convx13[c] - convx31[c] - convx32[c] - convx33[c];
+            x_abs[c] = (x_sum_signed[c] < 0) ? -x_sum_signed[c] : x_sum_signed[c];
+           
+            convx[c]   = (x_abs[c] > 255) ? 255 : x_abs[c]; 
             
             // *** Calculation of the vertical Sobel convolution ***
             // Each "convy" value corresponds to an input to that calculation, a different pixel in the 9-by-9 grid.
@@ -89,11 +96,15 @@ generate
             
             // Combine the values above in a way that faithfully implements Sobel.
             // You may declare more signals as needed.
-            convy[c]   = 'h0;
-            
+            y_sum_signed[c] = convy11[c] + convy21[c] + convy31[c] - convy13[c] - convy23[c] - convy33[c];
+            y_abs[c] = (y_sum_signed[c] < 0) ? -y_sum_signed[c] : y_sum_signed[c];
+           
+            convy[c]   = (y_abs[c] > 255) ? 255 : y_abs[c];       
+     
             // *** Calculation of the overall Sobel convolution result ***
             // The horizontal and vertical convolutions must be combined in a way that faithfully implements the Sobel convolution algorithm.
-            sobel_sum[c] = 'h0;
+            sum_pre[c] = convx[c] + convy[c];
+            sobel_sum[c] = (sum_pre[c] > 255) ? 255 : sum_pre[c];
             
             // *** Writing out the Sobel convolution result ***
             // This line should place the output of the Sobel convolution (the lines above) into the correct location in the output byte vector.
