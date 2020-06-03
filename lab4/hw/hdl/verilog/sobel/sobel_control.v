@@ -219,6 +219,7 @@ always @ (*) begin
                 // Insert your state transition code here.
                 //state_next                      = (row_counter == control_n_rows - 2) ? STATE_PROCESSING_CALC_LAST : STATE_PROCESSING_CALC;
                 state_next                      = STATE_PROCESSING_CALC;
+
             end
         end
         
@@ -252,7 +253,9 @@ always @ (*) begin
             if (go) begin
                 // *** Last-row-in-column loading state ***
                 // Insert your state transition code here.
+
                 state_next                      = (col_strip_next == max_col_strip) ? STATE_PROCESSING_DONE :  STATE_LOADING_1;
+
  
             end
         end
