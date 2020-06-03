@@ -172,7 +172,7 @@ for (i = 0; i < `NUM_SOBEL_ACCELERATORS; i = i + 1) begin: sobel_write_en
 // *** Write enable ***
 // If pixel_write_en[i] is set to 1, this tells the memory system that the current pixel at index i from the Sobel accelerator contains valid data to be written.
 // Make sure to only set it to 1 when the Sobel accelerator is producing valid data at that pixel position.
-assign      pixel_write_en[i]                   = buf_write_en;
+assign      pixel_write_en[i]                   = (col_strip + i < max_col_strip)? buf_write_en : 0;
 
 end
 endgenerate
@@ -217,7 +217,8 @@ always @ (*) begin
             if (go) begin
                 // *** Row 3 loading state ***
                 // Insert your state transition code here.
-                state_next                      = (row_counter_next == control_n_rows - 2) ? STATE_PROCESSING_CALC_LAST : STATE_PROCESSING_CALC;
+                //state_next                      = (row_counter == control_n_rows - 2) ? STATE_PROCESSING_CALC_LAST : STATE_PROCESSING_CALC;
+                state_next                      = STATE_PROCESSING_CALC;
             end
         end
         
@@ -225,7 +226,7 @@ always @ (*) begin
             if (go) begin
                 // *** Calculation state ***
                 // Insert your state transition code here.
-                state_next                      = STATE_PROCESSING_LOADSS;
+                state_next                      = (row_counter == control_n_rows - 2)?  STATE_PROCESSING_LOADSS_LAST : STATE_PROCESSING_LOADSS;
             end
         end
         
@@ -234,7 +235,8 @@ always @ (*) begin
                 // *** Next row loading state ***
                 // Insert your state transition code here.
         
-                state_next                      = STATE_LOADING_1;
+                //state_next                      = STATE_LOADING_1;
+                state_next                      = STATE_PROCESSING_CALC;
             end
         end
         
@@ -242,7 +244,7 @@ always @ (*) begin
             if (go) begin
                 // *** Last-row-in-column-strip calculation state ***
                 // Insert your state transition code here.
-                state_next = STATE_PROCESSING_LOADSS_LAST;
+                state_next = STATE_PROCESSING_DONE;
             end
         end
         
@@ -250,7 +252,7 @@ always @ (*) begin
             if (go) begin
                 // *** Last-row-in-column loading state ***
                 // Insert your state transition code here.
-                state_next                      = (next_col_strip == max_col_strip) ? STATE_PROCESSING_DONE :  STATE_LOADING_1;
+                state_next                      = (col_strip_next == max_col_strip) ? STATE_PROCESSING_DONE :  STATE_LOADING_1;
  
             end
         end
@@ -301,17 +303,20 @@ always @ (*) begin
         
         STATE_LOADING_1: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_op                              = `SOBEL_ROW_OP_SHIFT_ROW;
+            //row_op                              = `SOBEL_ROW_OP_SHIFT_ROW;
+            row_op                              = `SOBEL_ROW_OP_HOLD;
         end
         
         STATE_LOADING_2: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_op                              = `SOBEL_ROW_OP_SHIFT_ROW;
+            //row_op                              = `SOBEL_ROW_OP_SHIFT_ROW;
+            row_op                              = `SOBEL_ROW_OP_HOLD;
         end
         
         STATE_LOADING_3: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_op                              = `SOBEL_ROW_OP_SHIFT_ROW;
+            //row_op                              = `SOBEL_ROW_OP_SHIFT_ROW;
+            row_op                              = `SOBEL_ROW_OP_HOLD;
         end
         
         STATE_PROCESSING_CALC: begin
@@ -368,17 +373,20 @@ always @ (*) begin
         
         STATE_LOADING_1: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_counter_next                    = row_counter + 1;
+            //row_counter_next                    = row_counter + 1;
+           row_counter_next                    = row_counter;
         end
         
         STATE_LOADING_2: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_counter_next                    = row_counter + 1;
+            //row_counter_next                    = row_counter + 1;
+           row_counter_next                    = row_counter;
         end
         
         STATE_LOADING_3: begin
             // What happens in this state? Insert your code here. If nothing changes, you can remove this case completely.
-            row_counter_next                    = row_counter - 2;
+            //row_counter_next                    = row_counter - 2;
+            row_counter_next                   = row_counter;
         end
         
         STATE_PROCESSING_CALC: begin
