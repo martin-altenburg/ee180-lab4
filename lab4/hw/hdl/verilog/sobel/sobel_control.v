@@ -79,7 +79,7 @@ wire        [`NUM_SOBEL_ACCELERATORS-1:0]       pixel_write_en;                 
 genvar                                          i;
 
 // Output generation
-assign      sctl2srt_read_addr                  = buf_read_offset;
+assign      sctl2srt_read_addr                  = buf_read_offset_next;
 assign      sctl2swt_write_addr                 = buf_write_offset;
 assign      sctl2srow_row_op                    = row_op;
 
