@@ -1,1 +1,27 @@
-TODO: Write your lab report here. See the handout for more information.
+Group:
+  Martin Alternburg (altenbur@stanford.edu)
+  Swathi Iyer (swathii@stanford.edu)
+
+Description:
+
+Overall, our state transitions followed Figure 4.1 of the handout. We always start in the STATE_WAIT state, and 
+begin our calculations on go. On go, we transition to loading in the first three loads, which are states 
+STATE_LOADING1, STATE_LOADING2, and STATE_LOADING3 states. After STATE_LOADING3, we transition to STATE_CALC,
+to calculate the first convolution. We then continue to go back and forth between STATE_PROCESSING_CALC and 
+STATE_PROCESSING_LOADSS, to slide down the filter over the image, and to calculate the convolution. When we 
+get to the second-to-last filter position, rather than transitioning to STATE_PROCESSING_LOADSS from 
+STATE_PROCESSING_CALC, we go to STATE_PROCESSING_LOADSS_LAST, and then to STATE_PROCESSING_CALC_LAST. In 
+STATE_PROCESSING_CALC_LAST, we check whether we have passed the filter over all the columns. If so,
+we transition to STATE_DONE. If not, we transition to STATE_LOADING1 to again start at the top of the image. 
+
+We call `SOBEL_SHIFT_OP_SHIFT_ROW every time we want to load in a row. This is in the following states:
+STATE_LOADING1, STATE_LOADING2, STATE_LOADING3, STATE_PROCESSING_LOADSS, STATE_PROCESSING_LOADS_LAST.
+
+We have our row counter represent the position of the top of the filter (0-indexed). Thus, we only increment
+the row counter with each slide of the filter (after STATE_PROCESSING_CALC), and reset it to 0 in 
+STATE_PROCESSING_CALC_LAST. Similarly, we have our col_stip represent the column index of the start of the 
+filters, so after STATE_PROCESSING_CALC_LAST, we reset col_strip_next to next_col_strip, where next_col_strip
+is col_strip + NUM_ACCELERATORS.
+
+We only have our buf_write_en on after calculation stages, when we need to write the calculated data to the 
+output. The transitions to buf_write_en going high happen in STATE_PROCESSING_CALC and STATE_PROCESSING_CALC_LAST.
