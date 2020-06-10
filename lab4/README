@@ -23,5 +23,25 @@ STATE_PROCESSING_CALC_LAST. Similarly, we have our col_stip represent the column
 filters, so after STATE_PROCESSING_CALC_LAST, we reset col_strip_next to next_col_strip, where next_col_strip
 is col_strip + NUM_ACCELERATORS.
 
+Implementing buf_read_offset was the most difficult variable to work with. We know that the variable needs to 
+set to the value needed in the next cycle. Originally, it was the value needed for the instruct two cycles
+ahead, but we were able to fix this by setting sctl2srt_read_addr to buf_read_offset_next. At first,  
+buf_read_offset was always set to row_counter_next * control_n_columns + col_strip. However, it was difficult
+and complex to always increment and decrement the row counter. Therefore, the row counter is the same for 
+each iteration that produces an output pixel, and we add constants to row_counter when calculating the 
+memory address. 
+
+Implementing buf_write_offset was pretty similar. One bug that we spent quite some time looking over was the
+fact that we multiply our row_counter by (control_n_cols - 2) rather than control_n_cols. This is because the
+output image has a smaller size. Before making this change, we were writing onto invalid data space since
+our write addresses would be skewed. 
+
 We only have our buf_write_en on after calculation stages, when we need to write the calculated data to the 
 output. The transitions to buf_write_en going high happen in STATE_PROCESSING_CALC and STATE_PROCESSING_CALC_LAST.
+
+Our accelerator is pretty standard in function. We only had to add a few more variables. One important thing
+for us was adding the pixel values (for the first step of the convolution) into a signed reg. This way,
+we could determine whether the value is less than zero, and use a ternary operator to get our absolute
+value, which is an unsigned reg. We initially tried to avoid using a signed reg, but realized you can't 
+keep track of the overflows and underflows without considerable overhead. We then saturated the value
+to 255 if the sum was higher than that, and added/saturated the sum of the x and the y convolutions. 
